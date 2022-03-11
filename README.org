@@ -1,0 +1,13 @@
+* Outline of this project
+
+
+* Utilized vulkan concepts
+** VkInstance
+*** A handle to the vulkan implementation for the program to reference
+*** The way we issue vulkan calls to the specification (?)
+** VkDebugUtilsMessengerEXT
+*** Handles passing debug messages to a callback function
+** VkPhysicalDevice
+*** ?
+** VkDevice
+*** A handle a device object

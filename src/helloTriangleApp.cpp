@@ -80,10 +80,11 @@ void HelloTriangleApp::MainLoop() {
 
 //Cleans up allocated data whether it be heap, vulkan objects, glfw, etc.
 void HelloTriangleApp::Cleanup() {
-    vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
-    vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
-    vkDestroyFence(device, inFlightFence, nullptr);
-
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+        vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+        vkDestroyFence(device, inFlightFences[i], nullptr);
+    }
     vkDestroyCommandPool(device, commandPool, nullptr);
     for (auto framebuffer : swapChainFramebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -110,31 +111,31 @@ void HelloTriangleApp::Cleanup() {
 }
 
 void HelloTriangleApp::DrawFrame() {
-    vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(device, 1, &inFlightFence);
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-    vkResetCommandBuffer(commandBuffer, 0);
-    RecordCommandBuffer(commandBuffer, imageIndex);
+    vkResetCommandBuffer(commandBuffers[currentFrame], 0);
+    RecordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+    VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer; //possible source of errors
+    submitInfo.pCommandBuffers = &commandBuffers[currentFrame]; //possible source of errors
 
-    VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
+    VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence);
+    VkResult result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]);
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit draw command buffer");
     }
@@ -151,6 +152,8 @@ void HelloTriangleApp::DrawFrame() {
     presentInfo.pResults = nullptr;
 
     vkQueuePresentKHR(presentQueue, &presentInfo);
+
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 //Creates the vulkan handle for the entire application
@@ -650,13 +653,15 @@ void HelloTriangleApp::CreateCommandPool() {
     std::cout << "Created command pool" << std::endl;
 }
 
-void HelloTriangleApp::CreateCommandBuffer() {
+void HelloTriangleApp::CreateCommandBuffers() {
+    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = 1;
-    VkResult result = vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+    allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
+    VkResult result = vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data());
     if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to allocate command buffers");
     }
@@ -704,12 +709,15 @@ void HelloTriangleApp::CreateSyncObjects() {
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    VkResult imageAvailable = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphore);
-    VkResult renderFinished = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphore);
-    VkResult fenceCreated = vkCreateFence(device, &fenceInfo, nullptr, &inFlightFence);
-    if (imageAvailable != VK_SUCCESS || renderFinished != VK_SUCCESS || fenceCreated != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create semaphore");
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        VkResult imageAvailable = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]);
+        VkResult renderFinished = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]);
+        VkResult fenceCreated = vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]);
+        if (imageAvailable != VK_SUCCESS || renderFinished != VK_SUCCESS || fenceCreated != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create semaphore");
+        }
     }
+
 }
 
 VkShaderModule HelloTriangleApp::CreateShaderModule(const std::vector<char>& code) {

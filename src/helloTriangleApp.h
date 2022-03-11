@@ -28,6 +28,11 @@ const bool ENABLE_VALIDATION_LAYERS = true;
 #else
 const bool ENABLE_VALIDATION_LAYERS = false;
 #endif
+
+//for double buffering (or more)
+// more than two can start making the cpu lag behind the gpu
+const int MAX_FRAMES_IN_FLIGHT = 2;
+
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
@@ -103,7 +108,7 @@ class HelloTriangleApp {
 
     private:
         void CreateCommandPool();
-        void CreateCommandBuffer();
+        void CreateCommandBuffers();
         void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
     private:
@@ -133,6 +138,7 @@ class HelloTriangleApp {
             file.close();
             return buffer;
         }
+
     private:
         GLFWwindow* windowHandle;
         VkInstance instance;
@@ -155,11 +161,13 @@ class HelloTriangleApp {
         std::vector<VkFramebuffer> swapChainFramebuffers;
 
         VkCommandPool commandPool;
-        VkCommandBuffer commandBuffer;
+        std::vector<VkCommandBuffer> commandBuffers;
 
-        VkSemaphore imageAvailableSemaphore;
-        VkSemaphore renderFinishedSemaphore;
-        VkFence inFlightFence;
+        std::vector<VkSemaphore> imageAvailableSemaphores;
+        std::vector<VkSemaphore> renderFinishedSemaphores;
+        std::vector<VkFence> inFlightFences;
+
+        uint32_t currentFrame = 0;
 
     private:
         VkSurfaceKHR surface;
