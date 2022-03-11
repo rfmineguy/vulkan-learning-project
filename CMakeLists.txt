@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.2)
 
 project (vk_demo LANGUAGES CXX C)
+
+#custom cmake option
+
 #general cmake setting configuration
 set (CMAKE_CXX_STANDARD_REQUIRED True)
 set (CMAKE_EXPORT_COMPILE_COMMANDS True)

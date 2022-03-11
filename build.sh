@@ -1,24 +1,24 @@
 #
 # Check if /build/ exists and create it if not
 #
-build() {
-    if [ ! -d "${PWD}/build/" ]; then
-        echo "Build folder doesn't exist, creating it."
+build_dir_check() {
+    if [ ! -d "${PWD}/build" ]; then
         mkdir build
     fi
     cd build
-    cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=on
-    cmake --build .   
 }
-
-if [[ $1 == "-debug"* ]]; then
+build() {
+    build_dir_check
+    cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=on
+    cmake --build . #-v
+}
+if [[ $1 == "-validation"* ]]; then
     build
-    lldb ./vk_demo
-elif [[ $1 == "-normal"* ]]; then
+    ./vk_demo
+elif [[ $1 == "-novalidation"* ]]; then
     build
     ./vk_demo
 else
-    echo "Defaulting to -normal"
     build
     ./vk_demo
 fi
