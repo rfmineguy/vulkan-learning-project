@@ -1,4 +1,5 @@
 #include "vulkan/vulkan_core.h"
+#include <_types/_uint16_t.h>
 #include <_types/_uint32_t.h>
 #include <array>
 #define GLFW_INCLUDE_VULKAN
@@ -78,10 +79,14 @@ struct Vertex {
     }
 };
 
-const std::vector<Vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+const std::vector<Vertex> vertices =
+{{{-0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+ {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+ {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+ {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+
+const std::vector<uint16_t> indices = {
+0, 1, 2, 2, 3, 0
 };
 
 class HelloTriangleApp {
@@ -151,7 +156,12 @@ class HelloTriangleApp {
 
     private:
         void CreateVertexBuffer();
+        void CreateIndexBuffer();
         uint32_t FindMemoryType(uint32_t filter, VkMemoryPropertyFlags flags);
+
+    private:
+        void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags useFlags, VkMemoryPropertyFlags memPropFlags, VkBuffer& buffer, VkDeviceMemory& deviceMemory);
+        void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     private:
         void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -214,6 +224,8 @@ class HelloTriangleApp {
 
         VkBuffer vertexBuffer;
         VkDeviceMemory vertexBufferMemory;
+        VkBuffer indexBuffer;
+        VkDeviceMemory indexBufferMemory;
 
     private:
         VkSurfaceKHR surface;
