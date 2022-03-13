@@ -1,7 +1,9 @@
 #include "vulkan/vulkan_core.h"
 #include <_types/_uint32_t.h>
+#include <array>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #include <vulkan/vulkan.h>
 #include <stdexcept>
@@ -49,6 +51,37 @@ struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
+};
+
+struct Vertex {
+    glm::vec2 pos;
+    glm::vec3 color;
+    static VkVertexInputBindingDescription getBindingDescription() {
+        VkVertexInputBindingDescription bindingDescription{};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(Vertex);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        return bindingDescription;
+    }
+    static std::array<VkVertexInputAttributeDescription, 2> getAttribueDescription() {
+        std::array<VkVertexInputAttributeDescription, 2> attributes{};
+        attributes[0].binding = 0;
+        attributes[0].location = 0;
+        attributes[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributes[0].offset = offsetof(Vertex, pos);
+
+        attributes[1].binding = 0;
+        attributes[1].location = 1;
+        attributes[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributes[1].offset = offsetof(Vertex, color);
+        return attributes;
+    }
+};
+
+const std::vector<Vertex> vertices = {
+    {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
 };
 
 class HelloTriangleApp {
@@ -117,6 +150,10 @@ class HelloTriangleApp {
         void CreateSyncObjects();
 
     private:
+        void CreateVertexBuffer();
+        uint32_t FindMemoryType(uint32_t filter, VkMemoryPropertyFlags flags);
+
+    private:
         void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
     private:
@@ -141,9 +178,7 @@ class HelloTriangleApp {
             return buffer;
         }
         static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-            std::cout << "Framebuffer resized" << std::endl;
-            //auto app = reinterpret_cast<HelloTriangleApp*>(glfwGetWindowUserPointer(window));
-            //app->framebufferResized = true;
+            std::cout << "Framebuffer resized {" << width << 'x' << height << '}' << std::endl;
         }
 
     private:
@@ -176,6 +211,9 @@ class HelloTriangleApp {
 
         uint32_t currentFrame = 0;
         bool framebufferResized = false;
+
+        VkBuffer vertexBuffer;
+        VkDeviceMemory vertexBufferMemory;
 
     private:
         VkSurfaceKHR surface;
