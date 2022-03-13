@@ -94,6 +94,8 @@ class HelloTriangleApp {
 
     private:
         void CreateSwapChain();
+        void RecreateSwapChain();
+        void CleanupSwapChain();
         SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
         VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
         VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avaialablePresentModes);
@@ -138,6 +140,11 @@ class HelloTriangleApp {
             file.close();
             return buffer;
         }
+        static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+            std::cout << "Framebuffer resized" << std::endl;
+            //auto app = reinterpret_cast<HelloTriangleApp*>(glfwGetWindowUserPointer(window));
+            //app->framebufferResized = true;
+        }
 
     private:
         GLFWwindow* windowHandle;
@@ -168,6 +175,7 @@ class HelloTriangleApp {
         std::vector<VkFence> inFlightFences;
 
         uint32_t currentFrame = 0;
+        bool framebufferResized = false;
 
     private:
         VkSurfaceKHR surface;
